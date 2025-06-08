@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Advanced TO-DO Web App</title>
+  <style>
+    /* Reset & basics */
+    * {
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    body {
+      margin: 0; padding: 0;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      overflow-x: hidden;
+      padding: 20px;
+    }
+
+    /* Animations */
+    @keyframes fadeSlideDown {
+      0% {opacity: 0; transform: translateY(-30px);}
+      100% {opacity: 1; transform: translateY(0);}
+    }
+    @keyframes fadeSlideUp {
+      0% {opacity: 0; transform: translateY(30px);}
+      100% {opacity: 1; transform: translateY(0);}
+    }
+    @keyframes pulseScale {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    /* Welcome Text */
+    .welcome {
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 700;
+      margin-top: 80px;
+      opacity: 0;
+      animation: fadeSlideDown 1.5s ease forwards;
+      text-shadow: 0 0 10px rgba(255 255 255 / 0.6);
+    }
+
+    /* Buttons container */
+    .start-options, .list-options, .todo-container {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 40px;
+      animation: fadeSlideUp 1s ease forwards;
+      width: 100%;
+      max-width: 450px;
+    }
+
+    /* Buttons */
+    button {
+      background: linear-gradient(135deg, #43e97b, #38f9d7);
+      border: none;
+      border-radius: 12px;
+      padding: 14px 30px;
+      margin: 10px 0;
+      font-size: 1.2rem;
+      font-weight: 600;
+      cursor: pointer;
+      color: #fff;
+      box-shadow: 0 6px 12px rgba(56,249,215,0.5);
+      transition: background 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+      user-select: none;
+    }
+    button:hover {
+      background: linear-gradient(135deg, #38f9d7, #43e97b);
+      box-shadow: 0 8px 20px rgba(56,249,215,0.7);
+      animation: pulseScale 1.2s infinite ease-in-out;
+    }
+    button:active {
+      transform: scale(0.95);
+      box-shadow: none;
+    }
+
+    /* Todo container */
+    .todo-container {
+      background: #fff;
+      color: #333;
+      border-radius: 18px;
+      padding: 30px 25px;
+      box-shadow: 0 8px 30px rgb(0 0 0 / 0.2);
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      max-width: 480px;
+    }
+    .todo-container h2 {
+      margin: 0 0 20px;
+      font-weight: 800;
+      text-align: center;
+      color: #5d3fd3;
+      letter-spacing: 1.5px;
+      user-select: none;
+      text-shadow: 0 1px 5px rgba(93,63,211,0.5);
+    }
+
+    /* Inputs */
+    input[type="text"],
+    input[type="datetime-local"] {
+      padding: 14px 18px;
+      margin-bottom: 15px;
+      border: 2px solid #ccc;
+      border-radius: 12px;
+      font-size: 1rem;
+      transition: border-color 0.3s ease;
+      outline-offset: 2px;
+      outline-color: transparent;
+      width: 100%;
+      box-sizing: border-box;
+      user-select: text;
+    }
+    input[type="text"]:focus,
+    input[type="datetime-local"]:focus {
+      border-color: #5d3fd3;
+      outline-color: #5d3fd3;
+      box-shadow: 0 0 8px #5d3fd3aa;
+    }
+
+    /* Task list */
+    ul {
+      list-style-type: none;
+      padding: 0;
+      margin: 10px 0 0 0;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    ul::-webkit-scrollbar {
+      width: 8px;
+    }
+    ul::-webkit-scrollbar-thumb {
+      background: #5d3fd3aa;
+      border-radius: 12px;
+    }
+
+    /* Task item */
+    li {
+      background: #f0f0f0;
+      border-radius: 12px;
+      padding: 14px 20px;
+      margin-bottom: 12px;
+      color: #333;
+      font-size: 1.1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 8px rgb(0 0 0 / 0.1);
+      transform-origin: center left;
+      opacity: 1;
+      transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+      user-select: none;
+      cursor: default;
+    }
+    li:hover {
+      background: #e7e7e7;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      transform: scale(1.02);
+      z-index: 10;
+      cursor: pointer;
+    }
+    li.completed {
+      text-decoration: line-through;
+      opacity: 0.5;
+      background: #d3d3d3;
+      color: #777;
+      cursor: default;
+      box-shadow: none;
+      transform: none;
+    }
+
+    /* Task text */
+    li span {
+      flex-grow: 1;
+      user-select: text;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    li small {
+      font-weight: 600;
+      font-size: 0.85rem;
+      color: #999;
+      margin-left: 8px;
+      user-select: text;
+    }
+
+    /* Action buttons */
+    .actions button {
+      background: #ddd;
+      border-radius: 8px;
+      color: #333;
+      padding: 6px 12px;
+      margin-left: 8px;
+      font-weight: 600;
+      transition: background 0.3s ease, color 0.3s ease;
+      cursor: pointer;
+      user-select: none;
+    }
+    .actions button:hover {
+      background: #5d3fd3;
+      color: #fff;
+      box-shadow: 0 0 10px #5d3fd3;
+    }
+    .actions button:active {
+      transform: scale(0.95);
+    }
+
+    /* Responsive */
+    @media (max-width: 520px) {
+      .todo-container, .start-options, .list-options {
+        max-width: 100%;
+      }
+      button {
+        font-size: 1rem;
+        padding: 12px 20px;
+      }
+      li {
+        font-size: 1rem;
+        padding: 12px 16px;
+      }
+      input[type="text"],
+      input[type="datetime-local"] {
+        font-size: 0.95rem;
+        padding: 12px 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="welcome" id="welcome">Welcome to TO-DO App</div>
+
+  <div class="start-options" id="startOptions">
+    <button onclick="showListOptions()">View Lists</button>
+  </div>
+
+  <div class="list-options" id="listOptions">
+    <button onclick="showTodoContainer()">Create New List</button>
+    <button onclick="showTodoContainer()">Add to Existing List</button>
+  </div>
+
+  <div class="todo-container" id="todoContainer">
+    <h2>TO-DO WEB APP</h2>
+    <input type="text" id="taskInput" placeholder="Enter a task" />
+    <input type="datetime-local" id="taskTime" />
+    <button onclick="addTask()">Add Task</button>
+    <ul id="taskList"></ul>
+  </div>
+
+  <script>
+    // Animate welcome and show start options
+    window.onload = function () {
+      const welcome = document.getElementById('welcome');
+      const startOptions = document.getElementById('startOptions');
+      setTimeout(() => {
+        welcome.style.opacity = '1';
+        setTimeout(() => {
+          startOptions.style.display = 'flex';
+          loadTasks();
+        }, 1500);
+      }, 500);
+    };
+
+    // Show list options UI
+    function showListOptions() {
+      document.getElementById('listOptions').style.display = 'flex';
+    }
+
+    // Show the main to-do container UI
+    function showTodoContainer() {
+      document.getElementById('todoContainer').style.display = 'flex';
+    }
+
+    // Add a task to localStorage and render list
+    function addTask() {
+      const taskInput = document.getElementById('taskInput');
+      const taskTime = document.getElementById('taskTime');
+      const taskText = taskInput.value.trim();
+      const dateTime = taskTime.value;
+
+      if (!taskText) return alert("Please enter a task!");
+
+      const task = {
+        text: taskText,
+        time: dateTime,
+        completed: false,
+      };
+
+      const tasks = getTasks();
+      tasks.push(task);
+      saveTasks(tasks);
+      renderTasks();
+
+      taskInput.value = '';
+      taskTime.value = '';
+    }
+
+    // Render all tasks from localStorage
+    function renderTasks() {
+      const taskList = document.getElementById('taskList');
+      taskList.innerHTML = '';
+      const tasks = getTasks();
+
+      tasks.forEach((task, index) => {
+        const li = document.createElement('li');
+        if (task.completed) li.classList.add('completed');
+
+        li.innerHTML = `
+          <span>${escapeHTML(task.text)} ${task.time ? `<small>(${formatDateTime(task.time)})</small>` : ''}</span>
+          <div class="actions">
+            <button onclick="toggleComplete(${index})">${task.completed ? 'Undo' : 'Done'}</button>
+            <button onclick="editTask(${index})">Edit</button>
+            <button onclick="deleteTask(${index})">Delete</button>
+          </div>
+        `;
+        taskList.appendChild(li);
+      });
+    }
+
+    // Toggle complete state
+    function toggleComplete(index) {
+      const tasks = getTasks();
+      tasks[index].completed = !tasks[index].completed;
+      saveTasks(tasks);
+      renderTasks();
+    }
+
+    // Edit a task text
+    function editTask(index) {
+      const tasks = getTasks();
+      const currentText = tasks[index].text;
+      const newTask = prompt('Edit your task:', currentText);
+      if (newTask !== null && newTask.trim() !== '') {
+        tasks[index].text = newTask.trim();
+        saveTasks(tasks);
+        renderTasks();
+      }
+    }
+
+    // Delete a task
+    function deleteTask(index) {
+      const tasks = getTasks();
+      if (confirm('Are you sure you want to delete this task?')) {
+        tasks.splice(index, 1);
+        saveTasks(tasks);
+        renderTasks();
+      }
+    }
+
+    // Retrieve tasks array from localStorage
+    function getTasks() {
+      return JSON.parse(localStorage.getItem('todoTasks') || '[]');
+    }
+
+    // Save tasks array to localStorage
+    function saveTasks(tasks) {
+      localStorage.setItem('todoTasks', JSON.stringify(tasks));
+    }
+
+    // Load tasks on page load
+    function loadTasks() {
+      renderTasks();
+    }
+
+    // Format datetime-local string to readable format
+    function formatDateTime(dateTimeStr) {
+      if (!dateTimeStr) return '';
+      const options = { 
+        year: 'numeric', month: 'short', day: 'numeric', 
+        hour: '2-digit', minute: '2-digit',
+        hour12: true 
+      };
+      const date = new Date(dateTimeStr);
+      if (isNaN(date)) return '';
+      return date.toLocaleString(undefined, options);
+    }
+
+    // Escape HTML to prevent injection
+    function escapeHTML(str) {
+      const div = document.createElement('div');
+      div.appendChild(document.createTextNode(str));
+      return div.innerHTML;
+    }
+  </script>
+
+</body>
+</html>
